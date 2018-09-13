@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28010.2016
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VdiDotNet", "VdiDotNet\VdiDotNet.vcxproj", "{A563CA1E-B140-4320-B971-448B88C993DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VdiStreamS3", "DriverApp\VdiStreamS3.csproj", "{321CFD67-0B73-4844-ABC0-0B15C3666090}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VdiStreamS3", "VdiStreamS3\VdiStreamS3.csproj", "{321CFD67-0B73-4844-ABC0-0B15C3666090}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,18 +41,20 @@ Global
 		{A563CA1E-B140-4320-B971-448B88C993DB}.Release|x86.Build.0 = Release|Win32
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Win32.ActiveCfg = Debug|Any CPU
-		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|x64.Build.0 = Debug|Any CPU
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Win32.ActiveCfg = Debug|x86
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|Win32.Build.0 = Debug|x86
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|x64.ActiveCfg = Debug|x64
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|x64.Build.0 = Debug|x64
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|x86.ActiveCfg = Debug|x86
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Debug|x86.Build.0 = Debug|x86
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Any CPU.Build.0 = Release|Any CPU
-		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Win32.ActiveCfg = Release|Any CPU
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Mixed Platforms.Build.0 = Release|x86
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Win32.ActiveCfg = Release|x86
+		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|Win32.Build.0 = Release|x86
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|x64.ActiveCfg = Release|x64
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|x64.Build.0 = Release|x64
 		{321CFD67-0B73-4844-ABC0-0B15C3666090}.Release|x86.ActiveCfg = Release|x86
