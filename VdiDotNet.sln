@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28010.2016
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VdiDotNet", "VdiDotNet\VdiDotNet.vcxproj", "{A563CA1E-B140-4320-B971-448B88C993DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriverApp", "DriverApp\DriverApp.csproj", "{321CFD67-0B73-4844-ABC0-0B15C3666090}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VdiStreamS3", "DriverApp\VdiStreamS3.csproj", "{321CFD67-0B73-4844-ABC0-0B15C3666090}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

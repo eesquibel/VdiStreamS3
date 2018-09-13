@@ -7,8 +7,8 @@
     <ProjectGuid>{321CFD67-0B73-4844-ABC0-0B15C3666090}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DriverApp</RootNamespace>
-    <AssemblyName>DriverApp</AssemblyName>
+    <RootNamespace>VdiStreamS3</RootNamespace>
+    <AssemblyName>VdiStreamS3</AssemblyName>
     <SccProjectName>
     </SccProjectName>
     <SccLocalPath>

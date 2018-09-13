@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("DriverApp")]
+[assembly: AssemblyTitle("VdiStreamS3")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Macrobright")]
-[assembly: AssemblyProduct("DriverApp")]
-[assembly: AssemblyCopyright("Copyright © Macrobright 2007")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("VdiStreamS3")]
+[assembly: AssemblyCopyright("Copyright © Eric Esquibel 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("f83c31e0-f21f-4802-986d-a0cdfc113198")]
+[assembly: Guid("3e529463-80d8-450e-b0ee-d0ba3ad6d00d")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -29,5 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("0.1.0.*")]
+[assembly: AssemblyFileVersion("0.1.0.0")]
