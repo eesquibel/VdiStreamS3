@@ -1,15 +1,11 @@
-﻿using Amazon.S3.Transfer;
-using Amazon.S3;
+﻿using Amazon.S3;
 using Amazon.S3.Model;
-using Amazon;
 
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 
-namespace DriverApp
+namespace VdiStreamS3
 {
     class S3StreamWriter : Stream, IDisposable
     {
@@ -97,8 +93,6 @@ namespace DriverApp
 
         public override void Flush()
         {
-            Console.WriteLine($"Flush {Offset}");
-
             if (Offset < Buffer.Length)
             {
                 return;
@@ -109,21 +103,25 @@ namespace DriverApp
                 Start();
             }
 
-            UploadPart();
+            if (UploadPart(Buffer, 0, Offset))
+            {
+                Buffer.Initialize();
+                Offset = 0;
+            }
         }
 
-        private void UploadPart()
+        private bool UploadPart(byte[] buffer, int index, int count)
         {
-            if (Offset == 0)
+            if (count == 0)
             {
-                return;
+                return false;
             }
 
             Part += 1;
 
-            Console.WriteLine($"UploadPart {Part} {Offset}");
+            Console.WriteLine($"UploadPart {Part} {count}");
 
-            using (var stream = new MemoryStream(Buffer, 0, Offset, false))
+            using (var stream = new MemoryStream(buffer, index, count, false))
             {
                 var request = new UploadPartRequest()
                 {
@@ -131,7 +129,7 @@ namespace DriverApp
                     Key = Key,
                     UploadId = UploadId,
                     PartNumber = Part,
-                    PartSize = Offset,
+                    PartSize = count,
                     InputStream = stream
                 };
 
@@ -140,9 +138,7 @@ namespace DriverApp
                 partResponses.Add(response);
             }
 
-            Buffer.Initialize();
-            Offset = 0;
-
+            return true;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -169,33 +165,48 @@ namespace DriverApp
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            Console.WriteLine($"Write {offset} {count}");
-
             lock (Buffer)
             {
                 if (Offset + count < Buffer.Length)
                 {
-                    Console.WriteLine($"Write NoFlush {Offset}");
                     Array.Copy(buffer, offset, Buffer, Offset, count);
                     Offset += count;
                 }
                 else
                 {
+                    // Calc space remaining in current buffer
+                    int free = Buffer.Length - Offset;
+                    if (free > count)
+                    {
+                        free = count;
+                    }
+
+                    // Append to the current buffer
+                    Array.Copy(buffer, offset, Buffer, Offset, free);
+                    Offset += free;
+                    offset += free;
+                    count -= free;
+
+                    // Flush the buffer
+                    Flush();
+
+                    // While buffer isn't empty
                     while (count > 0)
                     {
-                        int free = Buffer.Length - Offset;
-                        if (free > count)
+                        // Upload every full part until the size is less than the Buffer size
+                        if (count >= Buffer.Length)
                         {
-                            free = count;
+                            UploadPart(buffer, offset, Buffer.Length);
+                            offset += Buffer.Length;
+                            count -= Buffer.Length;
                         }
-
-                        Console.WriteLine($"Write Flush {offset} {free} {count}");
-
-                        Array.Copy(buffer, offset, Buffer, Offset, free);
-                        Offset += free;
-                        offset += free;
-                        count -= free;
-                        Flush();
+                        // Then append the remaining chuck to the Buffer
+                        else
+                        {
+                            Array.Copy(buffer, offset, Buffer, Offset, count);
+                            Offset += count;
+                            break;
+                        }
                     }
                 }
             }
@@ -207,7 +218,7 @@ namespace DriverApp
             {
                 Console.WriteLine("Close");
 
-                UploadPart();
+                UploadPart(Buffer, 0, Offset);
 
                 var request = new CompleteMultipartUploadRequest()
                 {
@@ -228,16 +239,6 @@ namespace DriverApp
             }
 
             base.Close();
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                Console.WriteLine("Dispose");
-                partResponses = null;
-                Buffer = null;
-            }
         }
     }
 }
