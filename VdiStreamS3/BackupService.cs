@@ -26,7 +26,9 @@ namespace VdiStreamS3
             BackupDevice.CommandIssued += new EventHandler<CommandIssuedEventArgs>(BackupDevice_CommandIssued);
             BackupDevice.InfoMessageReceived += new EventHandler<InfoMessageEventArgs>(BackupDevice_InfoMessageReceived);
 
-            using (S3StreamWriter BackupStream = new S3StreamWriter(Options.Bucket, Options.Key, s3client))
+            int partSize = Options.PartSize * 1024 * 1024;
+
+            using (S3StreamWriter BackupStream = new S3StreamWriter(Options.Bucket, Options.Key, s3client, partSize))
             {
                 using (DeflateStream CompressedBackupStream = new DeflateStream(BackupStream, CompressionMode.Compress))
                 {

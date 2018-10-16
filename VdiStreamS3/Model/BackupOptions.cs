@@ -18,6 +18,9 @@ namespace VdiStreamS3.Model
         [Option(HelpText = "The database to backup", Required = true)]
         public string Database { get; set; }
 
+        [Option(HelpText = "The multipart upload part size, in MB", Default = 5)]
+        public int PartSize { get; set; }
+
         public RegionEndpoint RegionEndpoint
         {
             get
