@@ -4,7 +4,7 @@ using System;
 namespace VdiStreamS3.Model
 {
     [Verb("Restore", HelpText = "Restore a backup file")]
-    public class RestoreOptions
+    public class RestoreOptions : IUriOptions
     {
         [Option(HelpText = "The database to backup", Required = true)]
         public string Database { get; set; }
@@ -14,6 +14,5 @@ namespace VdiStreamS3.Model
 
         [Option(HelpText = "The AWS credential profile", Default = null)]
         public string AWSProfileName { get; set; }
-
     }
 }

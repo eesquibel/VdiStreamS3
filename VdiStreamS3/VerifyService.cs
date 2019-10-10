@@ -1,10 +1,5 @@
-﻿using Amazon.S3.Transfer;
-using Amazon.S3.Util;
-
-using System;
-using System.IO;
+﻿using System;
 using System.IO.Compression;
-using System.Net;
 
 using VdiDotNet;
 using VdiStreamS3.Model;
@@ -26,7 +21,7 @@ namespace VdiStreamS3
             BackupDevice.CommandIssued += new EventHandler<CommandIssuedEventArgs>(BackupDevice_CommandIssued);
             BackupDevice.InfoMessageReceived += new EventHandler<InfoMessageEventArgs>(BackupDevice_InfoMessageReceived);
 
-            using (var VerifyStream = GetUriStream())
+            using (var VerifyStream = UriStreamUtil.GetUriStream(Options))
             {
                 using (DeflateStream CompressedRestoreStream = new DeflateStream(VerifyStream, CompressionMode.Decompress))
                 {
@@ -37,30 +32,6 @@ namespace VdiStreamS3
             }
 
             return 0;
-        }
-
-        private Stream GetUriStream()
-        {
-            switch (Options.Uri.Scheme)
-            {
-                case "file":
-                    return new FileStream(Options.Uri.AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None, 1048576);
-                case "http":
-                case "https":
-                    if (Options.Uri.Host.EndsWith("amazonaws.com"))
-                    {
-                        var uri = new AmazonS3Uri(Options.Uri);
-                        var util = new TransferUtility(uri.Region);
-                        return util.OpenStream(uri.Bucket, uri.Key);
-                    } else
-                    {
-                        var request = WebRequest.Create(Options.Uri);
-                        return request.GetRequestStream();
-                    }
-                default:
-                    throw new FileNotFoundException("Cannot parse Uri", Options.Uri.AbsoluteUri);
-            }
-            
         }
 
         private void BackupDevice_InfoMessageReceived(object sender, InfoMessageEventArgs e)

@@ -139,12 +139,14 @@
   <ItemGroup>
     <Compile Include="BackupService.cs" />
     <Compile Include="Model\BackupOptions.cs" />
+    <Compile Include="Model\IUriOptions.cs" />
     <Compile Include="Model\RestoreOptions.cs" />
     <Compile Include="Model\VerifyOptions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="S3StreamWriter.cs" />
     <Compile Include="RestoreService.cs" />
+    <Compile Include="UriStreamUtil.cs" />
     <Compile Include="VerifyService.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -73,7 +73,6 @@ namespace VdiStreamS3
         {
         }
 
-
         private void Start()
         {
             partResponses = new List<UploadPartResponse>();
