@@ -1,4 +1,7 @@
-﻿using Amazon.S3.Transfer;
+﻿using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
+using Amazon.S3;
+using Amazon.S3.Transfer;
 using Amazon.S3.Util;
 
 using System;
@@ -55,8 +58,27 @@ namespace VdiStreamS3
                 case "https":
                     if (Options.Uri.Host.EndsWith("amazonaws.com"))
                     {
+                        TransferUtility util = null;
                         var uri = new AmazonS3Uri(Options.Uri);
-                        var util = new TransferUtility(uri.Region);
+
+                        if (!string.IsNullOrEmpty(Options.AWSProfileName))
+                        {
+                            var sharedFile = new SharedCredentialsFile();
+                            if (sharedFile.TryGetProfile(Options.AWSProfileName, out CredentialProfile profile))
+                            {
+                                if (AWSCredentialsFactory.TryGetAWSCredentials(profile, sharedFile, out AWSCredentials credentials))
+                                {
+                                    var s3client = new AmazonS3Client(credentials, uri.Region);
+                                    util = new TransferUtility(s3client);
+                                }
+                            }
+                        }
+
+                        if (util == null)
+                        {
+                            util = new TransferUtility(uri.Region);
+                        }
+
                         return util.OpenStream(uri.Bucket, uri.Key);
                     } else
                     {

@@ -1,4 +1,6 @@
-﻿using Amazon.S3;
+﻿using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
+using Amazon.S3;
 
 using System;
 using System.IO.Compression;
@@ -19,7 +21,24 @@ namespace VdiStreamS3
 
         public int Backup()
         {
-            var s3client = new AmazonS3Client(Options.RegionEndpoint);
+            AmazonS3Client s3client = null;
+
+            if (! string.IsNullOrEmpty(Options.AWSProfileName))
+            {
+                var sharedFile = new SharedCredentialsFile();
+                if (sharedFile.TryGetProfile(Options.AWSProfileName, out CredentialProfile profile))
+                {
+                    if (AWSCredentialsFactory.TryGetAWSCredentials(profile, sharedFile, out AWSCredentials credentials))
+                    {
+                        s3client = new AmazonS3Client(credentials, Options.RegionEndpoint);
+                    }
+                }
+            }
+
+            if (s3client == null)
+            {
+                s3client = new AmazonS3Client(Options.RegionEndpoint);
+            }
 
             //Backup the database			
             VdiEngine BackupDevice = new VdiEngine();
@@ -39,6 +58,8 @@ namespace VdiStreamS3
 
                 BackupStream.Close();
             }
+
+            s3client.Dispose();
 
             return 0;
         }

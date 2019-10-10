@@ -21,6 +21,9 @@ namespace VdiStreamS3.Model
         [Option(HelpText = "The multipart upload part size, in MB", Default = 5)]
         public int PartSize { get; set; }
 
+        [Option(HelpText = "The AWS credential profile", Default = null)]
+        public string AWSProfileName { get; set; }
+
         public RegionEndpoint RegionEndpoint
         {
             get
