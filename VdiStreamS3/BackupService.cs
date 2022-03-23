@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+using Amazon;
 using Amazon.Runtime;
-using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
 
 using System;
@@ -41,19 +41,29 @@ namespace VdiStreamS3
 
             if (! string.IsNullOrEmpty(Options.AWSProfileName))
             {
-                var sharedFile = new SharedCredentialsFile();
-                if (sharedFile.TryGetProfile(Options.AWSProfileName, out CredentialProfile profile))
-                {
-                    if (AWSCredentialsFactory.TryGetAWSCredentials(profile, sharedFile, out AWSCredentials credentials))
-                    {
-                        s3client = new AmazonS3Client(credentials, Options.RegionEndpoint);
-                    }
-                }
+                AWSConfigs.AWSProfileName = Options.AWSProfileName;
+            }
+
+            if (!string.IsNullOrEmpty(Options.Region))
+            {
+                AWSConfigs.AWSRegion = Options.Region;
+            }
+
+            if (Options.RegionEndpoint != null)
+            {
+                AWSConfigs.RegionEndpoint = Options.RegionEndpoint;
             }
 
             if (s3client == null)
             {
-                s3client = new AmazonS3Client(Options.RegionEndpoint);
+                s3client = new AmazonS3Client
+                (
+                    new AmazonS3Config
+                    {
+                        RetryMode = RequestRetryMode.Standard,
+                        MaxErrorRetry = 3,
+                    }
+                );
             }
 
             //Backup the database			

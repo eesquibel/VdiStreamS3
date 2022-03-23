@@ -27,6 +27,7 @@ namespace VdiStreamS3
 	{
 		static void Main(string[] args)
 		{
+            Console.ReadLine();
             Parser.Default.ParseArguments<BackupOptions, VerifyOptions, RestoreOptions>(args).MapResult
             (
                 (BackupOptions options) =>

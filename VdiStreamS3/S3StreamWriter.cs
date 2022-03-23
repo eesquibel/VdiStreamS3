@@ -18,20 +18,43 @@ using Amazon.S3;
 using Amazon.S3.Model;
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace VdiStreamS3
 {
     class S3StreamWriter : Stream, IDisposable
     {
-        private byte[] Buffer;
+        private struct UploadPart
+        {
+            public int PartNumber;
+            public byte[] Buffer;
+            public long PartSize;
 
-        private int Offset;
+            public UploadPart(int partNumber, MemoryStream input)
+            {
+                PartNumber = partNumber;
+                PartSize = input.Length;
+                Buffer = new byte[input.Length];
+                input.Seek(0, SeekOrigin.Begin);
+                input.Read(Buffer, 0, Buffer.Length);
+                input.Close();
+                input.Dispose();
+            }
+        }
 
-        private List<UploadPartResponse> partResponses;
+        private MemoryStream Buffer;
 
-        public AmazonS3Client S3Client;
+        private long Offset;
+
+        private ConcurrentBag<UploadPartResponse> partResponses;
+
+        public readonly AmazonS3Client S3Client;
+
+        private ConcurrentQueue<UploadPart> UploadQueue;
 
         public string UploadId { get; private set; }
 
@@ -41,33 +64,32 @@ namespace VdiStreamS3
 
         public int Part { get; private set; }
 
+        public int PartSize { get; private set; }
+
         public override bool CanRead => false;
 
         public override bool CanSeek => false;
 
         public override bool CanWrite => true;
 
-        public override long Length => Buffer.LongLength;
+        private long length = 0;
+
+        public override long Length => length;
 
         public override long Position { get => Offset; set => Offset = (int)value; }
+
+        private int inFlight = 0;
 
         public S3StreamWriter(string bucket, string key) : this(bucket, key, 5242880)
         {
         }
 
-        public S3StreamWriter(string bucket, string key, int size) : base()
+        public S3StreamWriter(string bucket, string key, int size) : this(bucket, key, new AmazonS3Client(), size)
         {
-            if (size < 5242880)
-            {
-                size = 5242880;
-            }
+        }
 
-            Buffer = new byte[size];
-            Offset = 0;
-
-            S3Client = new AmazonS3Client();
-            Bucket = bucket;
-            Key = key;
+        public S3StreamWriter(string bucket, string key, AmazonS3Client s3client) : this(bucket, key, s3client, 5242880)
+        {
         }
 
         public S3StreamWriter(string bucket, string key, AmazonS3Client s3client, int size) : base()
@@ -77,21 +99,22 @@ namespace VdiStreamS3
                 size = 5242880;
             }
 
-            Buffer = new byte[size];
+            PartSize = size;
+
+            Buffer = new MemoryStream(size);
             Offset = 0;
+            Part = 0;
 
             S3Client = s3client;
             Bucket = bucket;
             Key = key;
-        }
 
-        public S3StreamWriter(string bucket, string key, AmazonS3Client s3client) : this(bucket, key, s3client, 5242880)
-        {
+            UploadQueue = new ConcurrentQueue<UploadPart>();
         }
 
         private void Start()
         {
-            partResponses = new List<UploadPartResponse>();
+            partResponses = new ConcurrentBag<UploadPartResponse>();
 
             var request = new InitiateMultipartUploadRequest
             {
@@ -103,57 +126,75 @@ namespace VdiStreamS3
             var response = S3Client.InitiateMultipartUpload(request);
 
             UploadId = response.UploadId;
-            Part = 0;
         }
 
         public override void Flush()
         {
-            if (Offset < Buffer.Length)
+            while (UploadQueue.Count > 0 || inFlight > 0)
             {
-                return;
+                Thread.Sleep(3000);
+                Dequeue();
             }
+        }
 
+        private void Dequeue()
+        {
             if (string.IsNullOrEmpty(UploadId))
             {
                 Start();
             }
 
-            if (UploadPart(Buffer, 0, Offset))
+            if (inFlight >= 4)
             {
-                Buffer.Initialize();
-                Offset = 0;
+                return;
+            }
+
+            if (UploadQueue.TryDequeue(out var part))
+            {
+                UploadPartAsync(part).ContinueWith(task =>
+                {
+                    part.Buffer = null;
+                    Interlocked.Decrement(ref inFlight);
+                });
             }
         }
 
-        private bool UploadPart(byte[] buffer, int index, int count)
+        private async Task UploadPartAsync(UploadPart part)
         {
-            if (count == 0)
+            Interlocked.Increment(ref inFlight);
+
+            Console.WriteLine($"UploadPart {part.PartNumber} {part.PartSize}");
+
+            while (true)
             {
-                return false;
-            }
-
-            Part += 1;
-
-            Console.WriteLine($"UploadPart {Part} {count}");
-
-            using (var stream = new MemoryStream(buffer, index, count, false))
-            {
-                var request = new UploadPartRequest()
+                try
                 {
-                    BucketName = Bucket,
-                    Key = Key,
-                    UploadId = UploadId,
-                    PartNumber = Part,
-                    PartSize = count,
-                    InputStream = stream
-                };
+                    using (var stream = new MemoryStream(part.Buffer, 0, (int)part.PartSize, false))
+                    {
+                        var request = new UploadPartRequest()
+                        {
+                            BucketName = Bucket,
+                            Key = Key,
+                            UploadId = UploadId,
+                            PartNumber = part.PartNumber,
+                            PartSize = part.PartSize,
+                            InputStream = stream
+                        };
 
-                var response = S3Client.UploadPart(request);
+                        var response = await S3Client.UploadPartAsync(request);
 
-                partResponses.Add(response);
+                        partResponses.Add(response);
+                    }
+
+                    break;
+                }
+                catch (Exception)
+                {
+                    Thread.Sleep(3000);
+                }
             }
 
-            return true;
+            Dequeue();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -168,60 +209,37 @@ namespace VdiStreamS3
 
         public override void SetLength(long value)
         {
-            byte[] buffer = new byte[value];
-            Array.Copy(Buffer, buffer, value);
-            if (value < Offset)
-            {
-                Offset = (int)value;
-            }
+            throw new NotImplementedException();
+        }
 
-            Buffer = buffer;
+        private void Enqueue()
+        {
+            Part += 1;
+            var upload = new UploadPart(partNumber: Part, input: Buffer);
+            UploadQueue.Enqueue(upload);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
             lock (Buffer)
             {
-                if (Offset + count < Buffer.Length)
+                int total = buffer.Length - offset;
+                length += Math.Min(total, count);
+                Offset = length;
+                Buffer.Write(buffer, offset, count);
+
+                if (Buffer.Length >= PartSize)
                 {
-                    Array.Copy(buffer, offset, Buffer, Offset, count);
-                    Offset += count;
-                }
-                else
-                {
-                    // Calc space remaining in current buffer
-                    int free = Buffer.Length - Offset;
-                    if (free > count)
+                    Enqueue();
+                    Buffer = new MemoryStream(PartSize);
+                    while (inFlight >= 3)
                     {
-                        free = count;
+                        Thread.Sleep(3000);
                     }
 
-                    // Append to the current buffer
-                    Array.Copy(buffer, offset, Buffer, Offset, free);
-                    Offset += free;
-                    offset += free;
-                    count -= free;
-
-                    // Flush the buffer
-                    Flush();
-
-                    // While buffer isn't empty
-                    while (count > 0)
+                    if (UploadQueue.Count > 0)
                     {
-                        // Upload every full part until the size is less than the Buffer size
-                        if (count >= Buffer.Length)
-                        {
-                            UploadPart(buffer, offset, Buffer.Length);
-                            offset += Buffer.Length;
-                            count -= Buffer.Length;
-                        }
-                        // Then append the remaining chuck to the Buffer
-                        else
-                        {
-                            Array.Copy(buffer, offset, Buffer, Offset, count);
-                            Offset += count;
-                            break;
-                        }
+                        Dequeue();
                     }
                 }
             }
@@ -229,29 +247,40 @@ namespace VdiStreamS3
 
         public override void Close()
         {
-            if (!string.IsNullOrEmpty(UploadId))
+            if (Buffer.CanRead)
             {
+
+                if (string.IsNullOrEmpty(UploadId))
+                {
+                    if (Buffer.Length == 0)
+                    {
+                        Buffer.Close();
+                        base.Close();
+                        return;
+                    }
+                }
+
                 Console.WriteLine("Close");
 
-                UploadPart(Buffer, 0, Offset);
-
-                var request = new CompleteMultipartUploadRequest()
+                if (Buffer.Length > 0)
                 {
-                    BucketName = Bucket,
-                    Key = Key,
-                    UploadId = UploadId,
-                    PartETags = null
-                };
-
-                request.AddPartETags(partResponses);
-
-                var response = S3Client.CompleteMultipartUpload(request);
-
-                UploadId = null;
-                partResponses.Clear();
-                Offset = 0;
-                Buffer.Initialize();
+                    Enqueue();
+                }
             }
+
+            Flush();
+
+            var request = new CompleteMultipartUploadRequest()
+            {
+                BucketName = Bucket,
+                Key = Key,
+                UploadId = UploadId,
+                PartETags = null
+            };
+
+            request.AddPartETags(partResponses.OrderBy(part => part.PartNumber));
+
+            S3Client.CompleteMultipartUpload(request);
 
             base.Close();
         }
